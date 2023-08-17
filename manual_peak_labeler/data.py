@@ -146,6 +146,10 @@ class PeakNetData(DataManager):
 
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
+    def close(self):
         for path_cxi, cxi in self.cxi_dict.items():
             is_open = cxi.get("is_open")
             if is_open:
