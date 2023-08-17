@@ -20,13 +20,17 @@ def run(config_data):
     layout = MainLayout()
 
     # Data
-    with PeakNetData(config_data) as data_manager:
-        # Window
-        win = Window(layout, data_manager)
-        win.config()
-        win.show()
+    data_manager = PeakNetData(config_data)
 
-        sys.exit(app.exec_())
+    # Window
+    win = Window(layout, data_manager)
+    win.config()
+    win.show()
+
+    # Gracefully shut it down...
+    ret_code = app.exec_()
+    data_manager.close()
+    sys.exit(ret_code)
 
 
 class ConfigData:
