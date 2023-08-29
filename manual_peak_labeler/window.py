@@ -37,7 +37,8 @@ class Window(QtWidgets.QMainWindow):
 
         self.two_click_pos_list = []
         self.pen_click_pos_list = []
-        self.img = None
+        self.img   = None
+        self.label = None
 
         self.uses_roi_eraser = False
         self.label_item = ImageItem(None)
@@ -362,7 +363,7 @@ class Window(QtWidgets.QMainWindow):
         self.label = label
 
         vmin = np.mean(img)
-        vmax = vmin + 2 * np.std(img)
+        vmax = vmin + 4 * np.std(img)
         print(vmin, vmax)
         levels = [vmin, vmax]
 
@@ -442,6 +443,23 @@ class Window(QtWidgets.QMainWindow):
         return None
 
 
+    # [DEV]
+    def saveDataDialog(self):
+
+        is_confirmed = QtWidgets.QMessageBox.question(
+            self,
+            "Save Segmask",
+            "Are you sure you want to save the label to cxi?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.No
+        )
+
+        if is_confirmed == QtWidgets.QMessageBox.Yes:
+            self.data_manager.update_segmask(self.idx_img, self.label)
+
+        return None
+
+
     def selectActiveLayerDialog(self):
         idx, is_ok = QtWidgets.QInputDialog.getText(self, "Activate label", "Activate label")
 
@@ -475,7 +493,7 @@ class Window(QtWidgets.QMainWindow):
         fileMenu.addAction(self.loadAction)
         fileMenu.addAction(self.saveAction)
         ## fileMenu.addAction(self.loadDataAction)
-        ## fileMenu.addAction(self.saveDataAction)
+        fileMenu.addAction(self.saveDataAction)
 
         # Go menu
         goMenu = QtWidgets.QMenu("&Go", self)
@@ -496,8 +514,8 @@ class Window(QtWidgets.QMainWindow):
         self.loadDataAction = QtWidgets.QAction(self)
         self.loadDataAction.setText("&Load Data")
 
-        ## self.saveDataAction = QtWidgets.QAction(self)
-        ## self.saveDataAction.setText("&Save Data")
+        self.saveDataAction = QtWidgets.QAction(self)
+        self.saveDataAction.setText("&Save Segmask")
 
         self.goAction = QtWidgets.QAction(self)
         self.goAction.setText("&Event")
@@ -509,7 +527,7 @@ class Window(QtWidgets.QMainWindow):
         self.loadAction.triggered.connect(self.loadStateDialog)
         self.saveAction.triggered.connect(self.saveStateDialog)
         ## self.loadDataAction.triggered.connect(self.loadDataDialog)
-        ## self.saveDataAction.triggered.connect(self.saveDataDialog)
+        self.saveDataAction.triggered.connect(self.saveDataDialog)
 
         self.goAction.triggered.connect(self.goEventDialog)
 

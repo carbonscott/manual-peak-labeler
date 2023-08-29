@@ -116,7 +116,7 @@ class PeakNetData(DataManager):
             # Open a new file???
             if path_cxi not in cxi_dict:
                 cxi_dict[path_cxi] = {
-                    "file_handle" : h5py.File(path_cxi, 'a'),
+                    "file_handle" : h5py.File(path_cxi, 'r+'),
                     "is_open"     : True,
                 }
 
@@ -135,6 +135,7 @@ class PeakNetData(DataManager):
         self.CXI_KEY       = CXI_KEY
         self.path_cxi_list = path_cxi_list
         self.idx_list      = idx_list
+        self.buffer_dict   = {}
 
         set_seed(self.seed)
 
@@ -161,21 +162,27 @@ class PeakNetData(DataManager):
     def get_img(self, idx):
         path_cxi, event_idx, fh = self.idx_list[idx]
 
-        # Obtain the image...
-        k   = self.CXI_KEY["data"]
-        img = fh.get(k)[event_idx]
+        buffer_key = (path_cxi, event_idx)
+        if not buffer_key in self.buffer_dict:
+            # Obtain the image...
+            k   = self.CXI_KEY["data"]
+            img = fh.get(k)[event_idx]
 
-        # Obtain the bad pixel mask...
-        k    = self.CXI_KEY['mask']
-        mask = fh.get(k)
-        mask = mask[event_idx] if mask.ndim == 3 else mask[()]
+            # Obtain the bad pixel mask...
+            k    = self.CXI_KEY['mask']
+            mask = fh.get(k)
+            mask = mask[event_idx] if mask.ndim == 3 else mask[()]
 
-        # Apply mask...
-        img = apply_mask(img, 1 - mask, mask_value = 0)
+            # Apply mask...
+            img = apply_mask(img, 1 - mask, mask_value = 0)
 
-        # Obtain the segmask...
-        k       = self.CXI_KEY["segmask"]
-        segmask = fh.get(k)[event_idx]
+            # Obtain the segmask...
+            k       = self.CXI_KEY["segmask"]
+            segmask = fh.get(k)[event_idx]
+
+            self.buffer_dict[buffer_key] = (img, segmask)
+
+        img, segmask = self.buffer_dict[buffer_key]
 
         # Save random state...
         # Might not be useful for this labeler
@@ -187,3 +194,26 @@ class PeakNetData(DataManager):
             self.set_random_state()
 
         return img[None,], segmask[None,]
+
+
+    def update_segmask(self, idx, new_segmask):
+        path_cxi, event_idx, fh = self.idx_list[idx]
+
+        # Obtain the segmask...
+        k = self.CXI_KEY["segmask"]
+
+        # Update the content in segmask with caution...
+        try:
+            fh.get(k)[event_idx] = new_segmask[0]    # [0] : (1, H, W) -> (H, W)
+
+            # Flush it to disk now...
+            fh.flush()
+
+            # Clean the buffer...
+            self.buffer_dict = {}
+
+            print(f"The new segmask for event {event_idx} is saved.")
+
+        except Exception as e:
+            print(f"Oops!!! Errors occurs while saving the new segmask for event {event_idx}.")
+
