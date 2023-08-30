@@ -364,7 +364,7 @@ class Window(QtWidgets.QMainWindow):
         self.label = label
 
         vmin = np.mean(img)
-        vmax = vmin + 4 * np.std(img)
+        vmax = vmin + 8 * np.std(img)
         ## print(vmin, vmax)
         levels = [vmin, vmax]
 
@@ -457,6 +457,7 @@ class Window(QtWidgets.QMainWindow):
 
         if is_confirmed == QtWidgets.QMessageBox.Yes:
             self.data_manager.save_buffered_segmask()
+            self.dispImg()
 
         return None
 

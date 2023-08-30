@@ -208,6 +208,8 @@ class PeakNetData(DataManager):
 
             # Update the content in segmask with caution...
             try:
+                if np.all(fh.get(k)[event_idx] == unsaved_segmask): continue
+
                 fh.get(k)[event_idx] = unsaved_segmask    # (H, W) -> (H, W)
 
                 # Flush it to disk now...
