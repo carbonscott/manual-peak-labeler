@@ -162,7 +162,7 @@ class PeakNetData(DataManager):
     def get_img(self, idx):
         path_cxi, event_idx, fh = self.idx_list[idx]
 
-        buffer_key = (path_cxi, event_idx)
+        buffer_key = idx
         if not buffer_key in self.buffer_dict:
             # Obtain the image...
             k   = self.CXI_KEY["data"]
@@ -181,6 +181,7 @@ class PeakNetData(DataManager):
             segmask = fh.get(k)[event_idx]
 
             self.buffer_dict[buffer_key] = (img, segmask)
+            print(f"Event {event_idx} is in the buffer.")
 
         img, segmask = self.buffer_dict[buffer_key]
 
@@ -196,24 +197,27 @@ class PeakNetData(DataManager):
         return img[None,], segmask[None,]
 
 
-    def update_segmask(self, idx, new_segmask):
-        path_cxi, event_idx, fh = self.idx_list[idx]
-
-        # Obtain the segmask...
+    # [DEV]
+    def save_buffered_segmask(self):
+        # Use the key to access a segmask...
         k = self.CXI_KEY["segmask"]
 
-        # Update the content in segmask with caution...
-        try:
-            fh.get(k)[event_idx] = new_segmask[0]    # [0] : (1, H, W) -> (H, W)
+        for idx, (_, unsaved_segmask) in self.buffer_dict.items():
 
-            # Flush it to disk now...
-            fh.flush()
+            path_cxi, event_idx, fh = self.idx_list[idx]
 
-            # Clean the buffer...
-            self.buffer_dict = {}
+            # Update the content in segmask with caution...
+            try:
+                fh.get(k)[event_idx] = unsaved_segmask    # (H, W) -> (H, W)
 
-            print(f"The new segmask for event {event_idx} is saved.")
+                # Flush it to disk now...
+                fh.flush()
 
-        except Exception as e:
-            print(f"Oops!!! Errors occurs while saving the new segmask for event {event_idx}.")
+                print(f"The new segmask for event {event_idx} is saved.")
 
+            except Exception as e:
+                print(f"Oops!!! Errors occurs while saving the new segmask for event {event_idx}.")
+
+        # Empty the buffer again...
+        self.buffer_dict = {}
+        print(f"Buffer is cleaned.")

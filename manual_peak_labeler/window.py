@@ -39,6 +39,7 @@ class Window(QtWidgets.QMainWindow):
         self.pen_click_pos_list = []
         self.img   = None
         self.label = None
+        self.unsaved_label = {}
 
         self.uses_roi_eraser = False
         self.label_item = ImageItem(None)
@@ -364,7 +365,7 @@ class Window(QtWidgets.QMainWindow):
 
         vmin = np.mean(img)
         vmax = vmin + 4 * np.std(img)
-        print(vmin, vmax)
+        ## print(vmin, vmax)
         levels = [vmin, vmax]
 
         if requires_refresh_img:
@@ -455,7 +456,7 @@ class Window(QtWidgets.QMainWindow):
         )
 
         if is_confirmed == QtWidgets.QMessageBox.Yes:
-            self.data_manager.update_segmask(self.idx_img, self.label)
+            self.data_manager.save_buffered_segmask()
 
         return None
 
